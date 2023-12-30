@@ -1,64 +1,45 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.UIElements;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    Rigidbody rb;
+    [SerializeField] float movement = 5f;
+    [SerializeField] float jump = 4f;
+    [SerializeField] float sprint = 3f;
+    [SerializeField] LayerMask ground;
+
+
+    [SerializeField] Transform groundCheck;
     // Start is called before the first frame update
     void Start()
     {
-        
+        rb = GetComponent<Rigidbody>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        bool wKey = Input.GetKey(KeyCode.W);
-        bool aKey = Input.GetKey(KeyCode.A);
-        bool sKey = Input.GetKey(KeyCode.S);
-        bool dKey = Input.GetKey(KeyCode.D);
-        bool space = Input.GetKey(KeyCode.Space);
-        
-        // W, A, S, D
-        if (wKey)
+        float horizontalInput = Input.GetAxis("Horizontal");
+        float verticalInput = Input.GetAxis("Vertical");
+        if (Input.GetKey(KeyCode.LeftShift) && verticalInput > 0)
         {
-            GetComponent<Rigidbody>().velocity = new Vector3(0, 0, 2);
-        };
-        if (aKey)
-        {
-            GetComponent<Rigidbody>().velocity = new Vector3(-2, 0, 0);
-        };
-        if (sKey)
-        {
-            GetComponent<Rigidbody>().velocity = new Vector3(0, 0, -2);
-        };
-        if (dKey)
-        {
-            GetComponent<Rigidbody>().velocity = new Vector3(2, 0, 0);
-        };
-
-        // Jalan Miring
-        if (wKey && aKey)
-        {
-            GetComponent<Rigidbody>().velocity = new Vector3(-2, 0, 2);
-        };
-        if (wKey && dKey)
-        {
-            GetComponent<Rigidbody>().velocity = new Vector3(2, 0, 2);
-        };
-        if (sKey && aKey)
-        {
-            GetComponent<Rigidbody>().velocity = new Vector3(-2, 0, -2);
-        };
-        if (sKey && dKey)
-        {
-            GetComponent<Rigidbody>().velocity = new Vector3(2, 0, -2);
+            rb.velocity = new Vector3(horizontalInput * movement * sprint, rb.velocity.y, verticalInput * movement * sprint);
         }
-
-        // Lompat
-        if (space)
+        else
         {
-            GetComponent<Rigidbody>().velocity = new Vector3(0, 5, 0);
-        };
+            rb.velocity = new Vector3(horizontalInput * movement, rb.velocity.y, verticalInput * movement);
+        }
+        if (Input.GetButtonDown("Jump") && IsGrounded())
+        {
+            rb.velocity = new Vector3(rb.velocity.x, jump, rb.velocity.z);
+        }
+    }
+
+    bool IsGrounded()
+    {
+        return Physics.CheckSphere(groundCheck.position, .1f, ground);
     }
 }
