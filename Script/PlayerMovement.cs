@@ -1,4 +1,3 @@
-using UnityEditor.UIElements;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,6 +11,9 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] LayerMask ground;
     [SerializeField] Transform groundCheck;
     [SerializeField] Transform playerCamera; // Tambahkan referensi ke Transform kamera
+
+    public float speed = 5.0f;
+    public float sensitivity = 5.0f;
 
     // Start is called before the first frame update
     void Start()
@@ -50,6 +52,17 @@ public class PlayerMovement : MonoBehaviour
         {
             rb.velocity = new Vector3(rb.velocity.x, jump, rb.velocity.z);
         }
+
+        //Kamera
+        // camera forward, backward, left, and right
+        transform.position += transform.forward * Input.GetAxis("Vertical") * speed * Time.deltaTime;
+        transform.position += transform.right * Input.GetAxis("Horizontal") * speed * Time.deltaTime;
+
+        // Rotasi Kamera
+        // Rotate the camera based on the mouse movement
+        float mouseX = Input.GetAxis("Mouse X");
+        float mouseY = Input.GetAxis("Mouse Y");
+        transform.eulerAngles += new Vector3(-mouseY * sensitivity, mouseX * sensitivity, 0);
     }
 
     bool IsGrounded()
@@ -57,6 +70,7 @@ public class PlayerMovement : MonoBehaviour
         return Physics.CheckSphere(groundCheck.position, .1f, ground);
     }
 }
+
 
 
 
