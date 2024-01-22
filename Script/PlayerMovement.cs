@@ -2,123 +2,80 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
-    Rigidbody rb;
-    [SerializeField] float movement = 5f;
-    [SerializeField] float jump = 4f;
-    [SerializeField] float sprint = 3f;
-    [SerializeField] LayerMask ground;
-    [SerializeField] Transform groundCheck;
-    [SerializeField] Transform playerCamera; // Tambahkan referensi ke Transform kamera
+    public Camera playerCamera;
+    public float walkSpeed = 6f;
+    public float runSpeed = 12f;
+    public float jumpPower = 7f;
+    public float gravity = 10f;
+    public float lookSpeed = 2f;
+    public float lookXLimit = 45f;
+    public float defaultHeight = 2f;
+    public float crouchHeight = 1f;
+    public float crouchSpeed = 3f;
 
-    public float speed = 5.0f;
-    public float sensitivity = 5.0f;
+    private Vector3 moveDirection = Vector3.zero;
+    private float rotationX = 0;
+    private CharacterController characterController;
 
-    // Start is called before the first frame update
+    private bool canMove = true;
+
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        characterController = GetComponent<CharacterController>();
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        float horizontalInput = Input.GetAxis("Horizontal");
-        float verticalInput = Input.GetAxis("Vertical");
+        Vector3 forward = transform.TransformDirection(Vector3.forward);
+        Vector3 right = transform.TransformDirection(Vector3.right);
 
-        // Mendapatkan vektor arah gerakan berdasarkan rotasi kamera
-        Vector3 forward = playerCamera.forward;
-        Vector3 right = playerCamera.right;
-        forward.y = 0f;
-        right.y = 0f;
-        forward.Normalize();
-        right.Normalize();
+        bool isRunning = Input.GetKey(KeyCode.LeftShift);
+        float curSpeedX = canMove ? (isRunning ? runSpeed : walkSpeed) * Input.GetAxis("Vertical") : 0;
+        float curSpeedY = canMove ? (isRunning ? runSpeed : walkSpeed) * Input.GetAxis("Horizontal") : 0;
+        float movementDirectionY = moveDirection.y;
+        moveDirection = (forward * curSpeedX) + (right * curSpeedY);
 
-        Vector3 moveDirection = forward * verticalInput + right * horizontalInput;
-
-        // Mengatur kecepatan bergerak dengan sprint
-        float speed = movement;
-        if (Input.GetKey(KeyCode.LeftShift) && verticalInput > 0)
+        if (Input.GetButton("Jump") && canMove && characterController.isGrounded)
         {
-            speed *= sprint;
+            moveDirection.y = jumpPower;
+        }
+        else
+        {
+            moveDirection.y = movementDirectionY;
         }
 
-        // Mengatur kecepatan gerakan pemain berdasarkan arah yang dihadapkan oleh kamera
-        rb.velocity = new Vector3(moveDirection.x * speed, rb.velocity.y, moveDirection.z * speed);
-
-        // Melakukan lompatan jika di tanah
-        if (Input.GetButtonDown("Jump") && IsGrounded())
+        if (!characterController.isGrounded)
         {
-            rb.velocity = new Vector3(rb.velocity.x, jump, rb.velocity.z);
+            moveDirection.y -= gravity * Time.deltaTime;
         }
 
-        //Kamera
-        // camera forward, backward, left, and right
-        transform.position += transform.forward * Input.GetAxis("Vertical") * speed * Time.deltaTime;
-        transform.position += transform.right * Input.GetAxis("Horizontal") * speed * Time.deltaTime;
+        if (Input.GetKey(KeyCode.R) && canMove)
+        {
+            characterController.height = crouchHeight;
+            walkSpeed = crouchSpeed;
+            runSpeed = crouchSpeed;
 
-        // Rotasi Kamera
-        // Rotate the camera based on the mouse movement
-        float mouseX = Input.GetAxis("Mouse X");
-        float mouseY = Input.GetAxis("Mouse Y");
-        transform.eulerAngles += new Vector3(-mouseY * sensitivity, mouseX * sensitivity, 0);
-    }
+        }
+        else
+        {
+            characterController.height = defaultHeight;
+            walkSpeed = 6f;
+            runSpeed = 12f;
+        }
 
-    bool IsGrounded()
-    {
-        return Physics.CheckSphere(groundCheck.position, .1f, ground);
+        characterController.Move(moveDirection * Time.deltaTime);
+
+        if (canMove)
+        {
+            rotationX += -Input.GetAxis("Mouse Y") * lookSpeed;
+            rotationX = Mathf.Clamp(rotationX, -lookXLimit, lookXLimit);
+            playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
+            transform.rotation *= Quaternion.Euler(0, Input.GetAxis("Mouse X") * lookSpeed, 0);
+        }
     }
 }
-
-
-
-
-
-
-// public class PlayerMovement : MonoBehaviour
-// {
-//     Rigidbody rb;
-
-//     // Showing Selection to Unity
-//     [SerializeField] float movement = 5f;
-//     [SerializeField] float jump = 4f;
-//     [SerializeField] float sprint = 3f;
-    
-//     [SerializeField] LayerMask ground;
-//     [SerializeField] Transform groundCheck;
-    
-//     // Start is called before the first frame update
-//     void Start()
-//     {
-//         rb = GetComponent<Rigidbody>();
-//     }
-
-//     // Update is called once per frame
-//     void Update()
-//     {
-//         // Movement
-//         float horizontalInput = Input.GetAxis("Horizontal");
-//         float verticalInput = Input.GetAxis("Vertical");
-        
-//         if (Input.GetKey(KeyCode.LeftShift) && verticalInput > 0) // Walk and Run
-//         {
-//             rb.velocity = new Vector3(horizontalInput * movement * sprint, rb.velocity.y, verticalInput * movement * sprint);
-//         }
-//         else // Just Walk
-//         {
-//             rb.velocity = new Vector3(horizontalInput * movement, rb.velocity.y, verticalInput * movement);
-//         }
-        
-//         if (Input.GetButtonDown("Jump") && IsGrounded()) // It's for Jump
-//         {
-//             rb.velocity = new Vector3(rb.velocity.x, jump, rb.velocity.z);
-//         }
-//     }
-
-//     // True or False, When Jump Just Jump Once / Jump when You In The Ground
-//     bool IsGrounded()
-//     {
-//         return Physics.CheckSphere(groundCheck.position, .1f, ground);
-//     }
-// }
